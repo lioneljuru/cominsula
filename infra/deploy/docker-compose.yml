@@ -1,0 +1,30 @@
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/Dockerfile
+      args:
+        VITE_CONVEX_URL: ${VITE_CONVEX_URL:?set VITE_CONVEX_URL}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+
+  # Optional local Traefik L7 load balancer in front of multiple web replicas.
+  traefik:
+    image: traefik:v3.2
+    profiles: ["lb"]
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--accesslog=true"
+    ports:
+      - "80:80"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      - web
