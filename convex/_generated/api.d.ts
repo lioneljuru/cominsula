@@ -1,5 +1,6 @@
 /* eslint-disable */
 import type * as auth from "../auth.js";
+import type * as authSecurity from "../authSecurity.js";
 import type * as charges from "../charges.js";
 import type * as dashboard from "../dashboard.js";
 import type * as http from "../http.js";
@@ -43,6 +44,7 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  authSecurity: typeof authSecurity;
   charges: typeof charges;
   dashboard: typeof dashboard;
   http: typeof http;

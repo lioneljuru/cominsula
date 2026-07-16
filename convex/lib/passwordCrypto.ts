@@ -18,9 +18,14 @@ import { sha256Hex } from "./crypto";
 
 const scrypt = new Scrypt();
 
-/** Lucia Scrypt hashes are s2$... encoded strings. */
+/**
+ * Lucia Scrypt hashes are `saltHex:keyHex` (see lucia@3 Scrypt).
+ * Also accept older s2$ / $scrypt$ encodings if ever present.
+ */
 export function isScryptHash(hash: string): boolean {
-  return hash.startsWith("s2$") || hash.startsWith("$scrypt$");
+  if (hash.startsWith("s2$") || hash.startsWith("$scrypt$")) return true;
+  // lucia@3 default: 16-byte salt + 64-byte derived key as hex pair
+  return /^[a-f0-9]{16,64}:[a-f0-9]{64,256}$/i.test(hash);
 }
 
 export function isLegacyWeakHash(hash: string): boolean {

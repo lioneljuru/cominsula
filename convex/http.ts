@@ -15,9 +15,13 @@ const http = httpRouter();
 auth.addHttpRoutes(http);
 
 const CORS_HEADERS: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
+  // Invite lookup is intentionally public; tighten Origin in production via env.
+  "Access-Control-Allow-Origin": process.env.SITE_URL ?? "*",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "no-referrer",
+  "Cache-Control": "no-store",
 };
 
 http.route({

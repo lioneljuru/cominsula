@@ -18,7 +18,7 @@ import { sha256Hex } from "./crypto";
 describe("authValidation", () => {
   it("sanitizes HTML and control characters", () => {
     expect(sanitizeText("  <b>Ada</b>  ")).toBe("Ada");
-    expect(sanitizeText("foo<script>alert(1)</script>")).toBe("fooscriptalert(1)/script");
+    expect(sanitizeText("foo<script>alert(1)</script>")).toBe("fooalert(1)");
   });
 
   it("normalizes valid emails", () => {

@@ -35,7 +35,8 @@
     "@convex-dev/rate-limiter": "^0.2.8",
     "@auth/core": "^0.37.0",
     "convex": "^1.17.0",
-    "convex-helpers": "^0.1.70"
+    "convex-helpers": "^0.1.70",
+    "lucia": "^3.2.2"
   },
   "packageManager": "pnpm@11.11.0"
 }
