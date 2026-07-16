@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { AUTH_UI_MESSAGES, getClientRateLimitKey } from "@/lib/authSecurity";
 
 export function LoginPage() {
   const { signIn } = useAuthActions();
@@ -15,10 +16,16 @@ export function LoginPage() {
     setError("");
     setLoading(true);
     try {
-      await signIn("password", { email, password, flow: "signIn" });
+      await signIn("password", {
+        email,
+        password,
+        flow: "signIn",
+        rateLimitKey: getClientRateLimitKey(),
+      });
       navigate("/");
     } catch {
-      setError("Invalid email or password.");
+      // Lockout, rate-limit, and bad credentials share one message.
+      setError(AUTH_UI_MESSAGES.loginFailure);
     } finally {
       setLoading(false);
     }
@@ -30,11 +37,11 @@ export function LoginPage() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="label" htmlFor="email">Email</label>
-          <input id="email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+          <input id="email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" maxLength={254} />
         </div>
         <div>
           <label className="label" htmlFor="password">Password</label>
-          <input id="password" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+          <input id="password" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" minLength={8} maxLength={128} />
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button type="submit" className="btn-primary w-full" disabled={loading}>
@@ -42,6 +49,9 @@ export function LoginPage() {
         </button>
       </form>
       <p className="mt-4 text-center text-sm text-slate-600">
+        <Link to="/forgot-password" className="text-brand-600 hover:underline">Forgot password?</Link>
+      </p>
+      <p className="mt-2 text-center text-sm text-slate-600">
         New manager? <Link to="/register" className="text-brand-600 hover:underline">Create account</Link>
       </p>
     </div>

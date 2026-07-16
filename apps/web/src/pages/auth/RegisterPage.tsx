@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { AUTH_UI_MESSAGES, getClientRateLimitKey, authErrorMessage } from "@/lib/authSecurity";
 
 export function RegisterPage() {
   const { signIn } = useAuthActions();
@@ -11,19 +12,38 @@ export function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setMessage("");
     setLoading(true);
     try {
-      await signIn("password", { email, password, flow: "signUp" });
+      await signIn("password", {
+        email,
+        password,
+        flow: "signUp",
+        rateLimitKey: getClientRateLimitKey(),
+      });
+    } catch (err) {
+      const msg = authErrorMessage(err);
+      if (msg === AUTH_UI_MESSAGES.validationFailed) {
+        setError(AUTH_UI_MESSAGES.validationFailed);
+      } else {
+        // Existing email and other create failures must not confirm existence.
+        setMessage(AUTH_UI_MESSAGES.registrationPending);
+      }
+      setLoading(false);
+      return;
+    }
+    try {
       await ensureProfile({ fullName });
       navigate("/manager");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Registration failed.");
+    } catch {
+      setError(AUTH_UI_MESSAGES.validationFailed);
     } finally {
       setLoading(false);
     }
@@ -36,16 +56,17 @@ export function RegisterPage() {
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
         <div>
           <label className="label" htmlFor="fullName">Full name</label>
-          <input id="fullName" className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+          <input id="fullName" className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={100} />
         </div>
         <div>
           <label className="label" htmlFor="email">Email</label>
-          <input id="email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          <input id="email" type="email" className="input" value={email} onChange={(e) => setEmail(e.target.value)} required maxLength={254} />
         </div>
         <div>
           <label className="label" htmlFor="password">Password</label>
-          <input id="password" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+          <input id="password" type="password" className="input" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} maxLength={128} />
         </div>
+        {message && <p className="text-sm text-slate-700">{message}</p>}
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button type="submit" className="btn-primary w-full" disabled={loading}>
           {loading ? "Creating account…" : "Create account"}
@@ -71,8 +92,8 @@ export function RegisterCompletePage() {
     try {
       await ensureProfile({ fullName });
       navigate("/manager");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not complete profile.");
+    } catch {
+      setError(AUTH_UI_MESSAGES.validationFailed);
     } finally {
       setLoading(false);
     }
@@ -85,7 +106,7 @@ export function RegisterCompletePage() {
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
           <div>
             <label className="label" htmlFor="fullName">Full name</label>
-            <input id="fullName" className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required />
+            <input id="fullName" className="input" value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={100} />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <button type="submit" className="btn-primary w-full" disabled={loading}>Continue</button>

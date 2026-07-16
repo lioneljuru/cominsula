@@ -199,4 +199,14 @@ export default defineSchema({
     .index("by_manager", ["managerId", "createdAt"])
     .index("by_tenant", ["tenantId", "createdAt"])
     .index("by_property", ["propertyId", "createdAt"]),
+
+  // Auth security — failed-login counters + temporary lockouts (audit §2).
+  // Email is stored normalized; never log it alongside passwords/tokens.
+  authLockouts: defineTable({
+    email: v.string(),
+    failedCount: v.number(),
+    lockedUntil: v.optional(v.number()),
+    lastFailedAt: v.number(),
+    lockoutEmailSentAt: v.optional(v.number()),
+  }).index("by_email", ["email"]),
 });

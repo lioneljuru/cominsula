@@ -12,11 +12,15 @@ import {
 import { countProperties } from "./lib/limits";
 import { writeAudit } from "./lib/audit";
 import { logInfo } from "./lib/log";
+import { validateDisplayName } from "./lib/authValidation";
 
 /**
  * Create the manager domain profile for the currently authenticated user
  * (called by the client right after `signUp`). Idempotent. Refuses if the user
  * is already linked to a tenant, so a tenant cannot self-promote to manager.
+ *
+ * Mass-assignment note: only `fullName` is accepted; role/tier/verified flags
+ * are never client-settable (tier defaults to free server-side).
  */
 export const ensureProfile = mutation({
   args: { fullName: v.string() },
@@ -24,12 +28,15 @@ export const ensureProfile = mutation({
     const userId = await getAuthUserId(ctx);
     if (!userId) errUnauthenticated();
 
+    const safeName = validateDisplayName(fullName);
+
     const existingTenant = await ctx.db
       .query("tenants")
       .withIndex("by_authUser", (q) => q.eq("authUserId", userId))
       .unique();
     if (existingTenant) {
-      errForbidden("This account is already registered as a tenant");
+      // Generic — do not confirm tenant vs manager linkage details.
+      errForbidden("Permission denied");
     }
 
     const existing = await ctx.db
@@ -43,7 +50,7 @@ export const ensureProfile = mutation({
     const managerId = await ctx.db.insert("propertyManagers", {
       userId,
       email,
-      fullName,
+      fullName: safeName,
       subscriptionTier: "free",
       createdAt: Date.now(),
     });
@@ -62,9 +69,8 @@ export const me = managerQuery({
 export const updateProfile = managerMutation({
   args: { fullName: v.string() },
   handler: async (ctx, { fullName }) => {
-    const trimmed = fullName.trim();
-    if (!trimmed) errForbidden("Full name cannot be empty");
-    await ctx.db.patch(ctx.manager._id, { fullName: trimmed });
+    const safeName = validateDisplayName(fullName);
+    await ctx.db.patch(ctx.manager._id, { fullName: safeName });
     await writeAudit(ctx.db, {
       managerId: ctx.manager._id,
       actorType: "manager",

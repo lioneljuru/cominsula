@@ -4,6 +4,7 @@ import { useQuery, useMutation } from "convex/react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { api } from "../../../../../convex/_generated/api";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { getClientRateLimitKey } from "@/lib/authSecurity";
 
 export function InviteLandingPage() {
   const { token } = useParams<{ token: string }>();
@@ -69,6 +70,7 @@ export function InviteAcceptPage() {
         email: invite.tenantEmail,
         password,
         flow: "signUp",
+        rateLimitKey: getClientRateLimitKey(),
       });
       await linkInvite({ token });
       navigate("/invite/success");

@@ -95,11 +95,11 @@ const HEX = "0123456789abcdef";
 export function generateInviteToken(): string {
   const bytes = new Uint8Array(TOKEN_BYTES);
   const g = globalThis as { crypto?: { getRandomValues?: (a: Uint8Array) => void } };
-  if (g.crypto?.getRandomValues) {
-    g.crypto.getRandomValues(bytes);
-  } else {
-    for (let i = 0; i < TOKEN_BYTES; i++) bytes[i] = Math.floor(Math.random() * 256);
+  if (!g.crypto?.getRandomValues) {
+    // Never fall back to Math.random for security tokens.
+    throw new Error("Secure random generator unavailable");
   }
+  g.crypto.getRandomValues(bytes);
   let out = "";
   for (const byte of bytes) out += HEX[byte >> 4]! + HEX[byte & 0x0f]!;
   return out;
